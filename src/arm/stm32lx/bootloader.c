@@ -20,7 +20,7 @@
 // ------------------------------------------------
 // CRC-32
 
-BOOT static uint32_t boot_crc32 (void* buf, uint32_t nwords) {
+static uint32_t boot_crc32 (void* buf, uint32_t nwords) {
     uint32_t* src = buf;
     uint32_t v;
 
@@ -73,7 +73,7 @@ extern void delay (int);
 #define LED_ON()	do { SET_PIN(BOOT_LED_GPIO, (BOOT_LED_GPIO & GPIO_F_ACTLOW) ? 0 : 1); } while (0)
 #define LED_OFF()	do { SET_PIN(BOOT_LED_GPIO, (BOOT_LED_GPIO & GPIO_F_ACTLOW) ? 1 : 0); } while (0)
 
-BOOT static void blink_value (uint32_t v) {
+static void blink_value (uint32_t v) {
     // blink nibble-by-nibble
     // least-significant-nibble first, 0x0 -> 1 blink, 0xf -> 16 blinks
     do {
@@ -94,7 +94,7 @@ BOOT static void blink_value (uint32_t v) {
 __attribute__((always_inline)) static void NVIC_SystemReset (void);
 
 __attribute__((noreturn))
-BOOT void boot_panic (uint32_t type, uint32_t reason, uint32_t addr) {
+void boot_panic (uint32_t type, uint32_t reason, uint32_t addr) {
     // disable all interrupts
     __disable_irq();
     // startup MSI @2.1MHz
@@ -134,7 +134,7 @@ BOOT void boot_panic (uint32_t type, uint32_t reason, uint32_t addr) {
 }
 
 __attribute__((noreturn, naked))
-BOOT static void fw_panic (uint32_t reason, uint32_t addr) {
+static void fw_panic (uint32_t reason, uint32_t addr) {
     boot_panic(BOOT_PANIC_TYPE_FIRMWARE, reason, addr);
 }
 
@@ -142,7 +142,7 @@ BOOT static void fw_panic (uint32_t reason, uint32_t addr) {
 // ------------------------------------------------
 // Flash functions
 
-BOOT static void unlock_flash_prog (void) {
+static void unlock_flash_prog (void) {
     // unlock flash registers
     FLASH->PEKEYR = 0x89ABCDEF; // FLASH_PEKEY1
     FLASH->PEKEYR = 0x02030405; // FLASH_PEKEY2
@@ -154,11 +154,11 @@ BOOT static void unlock_flash_prog (void) {
 
 }
 
-BOOT static void relock_flash (void) {
+static void relock_flash (void) {
     FLASH->PECR |= FLASH_PECR_PELOCK;
 }
 
-BOOT static void check_eop (uint32_t panic_addr) {
+static void check_eop (uint32_t panic_addr) {
     if (FLASH->SR & FLASH_SR_EOP) {
 	FLASH->SR = FLASH_SR_EOP;
     } else {
@@ -167,7 +167,7 @@ BOOT static void check_eop (uint32_t panic_addr) {
     }
 }
 
-BOOT static void erase_flash (uint32_t* dst, uint32_t* end) {
+static void erase_flash (uint32_t* dst, uint32_t* end) {
     unlock_flash_prog();
 
     // erase pages
@@ -183,7 +183,7 @@ BOOT static void erase_flash (uint32_t* dst, uint32_t* end) {
     relock_flash();
 }
 
-BOOT static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool erase) {
+static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool erase) {
     // prepare flash copy function in RAM (on stack)
     extern uint32_t wr_fl_hp_begin;
     extern uint32_t wr_fl_hp_end;
@@ -226,7 +226,7 @@ BOOT static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, boo
     relock_flash();
 }
 
-BOOT static void ee_write (uint32_t* dst, uint32_t val) {
+static void ee_write (uint32_t* dst, uint32_t val) {
     *dst = val;
     while (FLASH->SR & FLASH_SR_BSY);
 }
@@ -235,12 +235,12 @@ BOOT static void ee_write (uint32_t* dst, uint32_t val) {
 // ------------------------------------------------
 // Update functions
 
-BOOT static uint32_t update (boot_uphdr* fwup, bool install) {
+static uint32_t update (boot_uphdr* fwup, bool install) {
     // TODO: migrate implementation from internal code base
     return BOOT_E_UNKNOWN;
 }
 
-BOOT static uint32_t set_update (void* ptr, hash32* hash) {
+static uint32_t set_update (void* ptr, hash32* hash) {
     uint32_t rv;
     if (ptr == NULL) {
 	rv = BOOT_OK;
@@ -271,7 +271,7 @@ BOOT static uint32_t set_update (void* ptr, hash32* hash) {
 // ------------------------------------------------
 // Bootloader main entry point
 
-BOOT void* bootloader (void) {
+void* bootloader (void) {
     boot_fwhdr* fwh = (boot_fwhdr*) BOOT_FW_BASE;
     boot_config* cfg = (boot_config*) BOOT_CONFIG_BASE;
 

@@ -18,12 +18,8 @@
 
 #include "bootloader.h"
 
-// Section specifier for bootloader code
-#define BOOT	__attribute__((section(".boot")))
-
 // Convert pointer to Thumb function (set least-significant bit)
 #define THUMB_FUNC(p)	((void*) (((intptr_t) (p)) | 1))
-
 
 extern uint32_t _ebl;
 #define BOOT_FW_BASE	((uint32_t) (&_ebl))

@@ -21,9 +21,8 @@ SECTIONS {
 	. = ALIGN(4);
 	KEEP(*(.boot.isr_vector))
 	. = ALIGN(4);
-	*(.boot.default_handler)
-	*(.boot.reset_handler)
-	*(.boot)
 	*(.boot*)
+	*(.text*)
+	*(.rodata*)
     } >BLFLASH
 }

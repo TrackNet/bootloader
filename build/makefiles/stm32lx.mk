@@ -1,10 +1,13 @@
 include $(MKDIR)/arm.mk
 
 VPATH		+= $(SRCDIR)/arm/stm32lx
+VPATH		+= $(SRCDIR)/common
 
 SRCS		+= bootloader.c
 SRCS		+= util.S
 SRCS		+= startup.S
+
+SRCS		+= sha2.c
 
 
 STM32		:= $(shell echo $(MCU) | sed 's/^STM32\(L[01]\)\([0-9][0-9]\)\([BZ]\)$$/ok t\/\1 v\/\2 s\/\3/')
