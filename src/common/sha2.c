@@ -13,6 +13,8 @@
  *
  */
 
+#include <string.h>
+
 #include "sha2.h"
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
@@ -122,11 +124,10 @@ void sha256 (uint32_t* hash, const uint8_t* msg, uint32_t len) {
 last:
 		tmp.words[15] = ENDIAN_n2b32(bitlen);
 		sha256_do(state, tmp.bytes);
-		int i;
-		for (i = 0; i < 8; i++) {
+		for (int i = 0; i < 8; i++) {
 		    hash[i] = ENDIAN_n2b32(state[i]);
 		}
-		break;
+		return;
 	    } else {
 		sha256_do(state, tmp.bytes);
 		memset(tmp.words, 0, sizeof(tmp));
