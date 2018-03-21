@@ -1,5 +1,3 @@
-TOPDIR		:= ../../..
-
 include $(MKDIR)/arm.mk
 
 VPATH		+= $(SRCDIR)/arm/stm32lx
@@ -7,10 +5,6 @@ VPATH		+= $(SRCDIR)/arm/stm32lx
 SRCS		+= bootloader.c
 SRCS		+= util.S
 SRCS		+= startup.S
-
-FLAGS		+= -mcpu=cortex-m0plus
-
-LDFLAGS		+= $(addprefix -T$(BOOTDIR)/,$(LD_SCRIPTS))
 
 
 STM32		:= $(shell echo $(MCU) | sed 's/^STM32\(L[01]\)\([0-9][0-9]\)\([BZ]\)$$/ok t\/\1 v\/\2 s\/\3/')
@@ -25,6 +19,9 @@ STM32_S		:= $(notdir $(filter s/%,$(STM32)))
 DEFS		+= STM32$(STM32_T)
 DEFS		+= STM32$(STM32_T)$(STM32_V)xx
 
+FLAGS		+= -mcpu=cortex-m0plus
+
+CFLAGS		+= -Wall
 CFLAGS		+= -Os
 CFLAGS		+= -I$(SRCDIR)/arm/CMSIS/Device/ST/STM32$(STM32_T)xx/Include
 

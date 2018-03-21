@@ -46,10 +46,16 @@ enum {
     BOOT_E_SIZE,
 };
 
+// SHA-256 hash
+typedef union {
+    uint8_t b[32];
+    uint32_t w[8];
+} hash32;
+
 // Bootloader information table
 typedef struct {
     uint32_t version;					// version of boot loader (values below 256 are reserved for legacy bootloaders)
-    uint32_t (*update) (void* ptr, uint8_t* hash);	// function to set firmware update pointer
+    uint32_t (*update) (void* ptr, hash32* hash);	// function to set firmware update pointer
     __attribute__((noreturn))
 	void (*panic) (uint32_t reason, uint32_t addr);	// bootloader panic function 
 

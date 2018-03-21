@@ -226,6 +226,11 @@ BOOT static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, boo
     relock_flash();
 }
 
+BOOT static void ee_write (uint32_t* dst, uint32_t val) {
+    *dst = val;
+    while (FLASH->SR & FLASH_SR_BSY);
+}
+
 
 // ------------------------------------------------
 // Update functions
@@ -235,23 +240,28 @@ BOOT static uint32_t update (boot_uphdr* fwup, bool install) {
     return BOOT_E_UNKNOWN;
 }
 
-BOOT static uint32_t set_update (void* ptr, uint8_t* hash) {
+BOOT static uint32_t set_update (void* ptr, hash32* hash) {
     uint32_t rv;
     if (ptr == NULL) {
 	rv = BOOT_OK;
     } else {
 	rv = update(ptr, false);
     }
-    // TODO: hash
     if (rv == BOOT_OK) {
 	boot_config* cfg = (boot_config*) BOOT_CONFIG_BASE;
-	// set update pointer
+	// unlock EEPROM
 	FLASH->PEKEYR = 0x89ABCDEF; // FLASH_PEKEY1
 	FLASH->PEKEYR = 0x02030405; // FLASH_PEKEY2
-	cfg->fwupdate1 = (uint32_t) ptr;
-	while(FLASH->SR & FLASH_SR_BSY);
-	cfg->fwupdate2 = (uint32_t) ptr;
-	while(FLASH->SR & FLASH_SR_BSY);
+	// copy hash
+	if (hash) {
+	    for (int i = 0; i < 8; i++) {
+		ee_write(&cfg->hash.w[i], hash->w[i]);
+	    }
+	}
+	// set update pointer
+	ee_write(&cfg->fwupdate1, (uint32_t) ptr);
+	ee_write(&cfg->fwupdate2, (uint32_t) ptr);
+	// relock EEPROM
 	FLASH->PECR |= FLASH_PECR_PELOCK;
     }
     return rv;

@@ -35,7 +35,7 @@ extern uint32_t _ebl;
 typedef struct {
     uint32_t	fwupdate1;	// 0x00 pointer to valid update
     uint32_t	fwupdate2;	// 0x04 pointer to valid update
-    uint8_t	hash[32];	// 0x08 SHA-256 hash of valid update
+    hash32	hash;		// 0x08 SHA-256 hash of valid update
 
     uint8_t	rfu[24];	// 0x28 RFU
 } boot_config;
