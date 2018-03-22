@@ -44,7 +44,7 @@ The patch tool is written in Python. It is tested with Python 3.6 and requires
 the package `intelhex` package to be installed.
 
 To build the application, change into the example's directory and type make:
-````
+```
 cd example/stm32l0
 make
 ```
