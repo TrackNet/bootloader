@@ -14,6 +14,7 @@
  */
 
 #include "bootloader_impl.h"
+#include "update.h"
 #include "hw.h"
 
 
@@ -58,7 +59,7 @@ static uint32_t boot_crc32 (void* buf, uint32_t nwords) {
 
 #if defined(BOOT_LED_GPIO)
 
-extern void delay (int);
+extern void delay (int); // provided by util.S
 
 #define _LED_INIT(p,n)	do { \
     (p)->MODER   = ((p)->MODER   & ~(3 << (2 * (n)))) | (1 << (2 * (n))); /* output          */ \
@@ -142,7 +143,14 @@ static void fw_panic (uint32_t reason, uint32_t addr) {
 // ------------------------------------------------
 // Flash functions
 
-static void unlock_flash_prog (void) {
+typedef void (*wr_fl_hp) (uint32_t*, uint32_t*);
+
+typedef struct {
+    boot_uphdr* fwup;
+    wr_fl_hp wf_func;
+} up_ctx;
+
+static void unlock_flash (void) {
     // unlock flash registers
     FLASH->PEKEYR = 0x89ABCDEF; // FLASH_PEKEY1
     FLASH->PEKEYR = 0x02030405; // FLASH_PEKEY2
@@ -151,7 +159,6 @@ static void unlock_flash_prog (void) {
     FLASH->PRGKEYR = 0x13141516; // FLASH_PRGKEY2;
     // enable flash erase and half-page programming
     FLASH->PECR |= FLASH_PECR_PROG;
-
 }
 
 static void relock_flash (void) {
@@ -167,35 +174,24 @@ static void check_eop (uint32_t panic_addr) {
     }
 }
 
-static void erase_flash (uint32_t* dst, uint32_t* end) {
-    unlock_flash_prog();
+extern uint32_t wr_fl_hp_begin;	// provided by util.S
+extern uint32_t wr_fl_hp_end;	// provided by util.S
 
-    // erase pages
-    FLASH->PECR |= FLASH_PECR_ERASE;
-    while (dst < end) {
-	*dst = 0;
-	while (FLASH->SR & FLASH_SR_BSY);
-	check_eop(1);
-	dst += 32;
-    }
-    FLASH->PECR &= ~FLASH_PECR_ERASE;
+#define WR_FL_HP_WORDS	(&wr_fl_hp_end - &wr_fl_hp_begin)
 
-    relock_flash();
-}
-
-static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool erase) {
-    // prepare flash copy function in RAM (on stack)
-    extern uint32_t wr_fl_hp_begin;
-    extern uint32_t wr_fl_hp_end;
-    int i, sz = &wr_fl_hp_end - &wr_fl_hp_begin;
-    uint32_t funcbuf[sz];
-    for (i = 0; i < sz; i++) {
+static wr_fl_hp prep_wr_fl_hp (uint32_t* funcbuf) {
+    for (int i = 0; i < WR_FL_HP_WORDS; i++) {
 	funcbuf[i] = (&wr_fl_hp_begin)[i];
     }
-    void (*wr_fl_hp) (uint32_t*, uint32_t*) = THUMB_FUNC(funcbuf);
+    return THUMB_FUNC(funcbuf);
+}
+
+#if 0
+static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool erase) {
+    uint32_t funcbuf[WR_FL_HP_WORDS];
+    wr_fl_hp wf_func = prep_wr_fl_hp(funcbuf);
 
     unlock_flash_prog();
-
     while (nwords > 0) {
 	if (erase && (((uintptr_t) dst) & 127) == 0) {
 	    // erase page
@@ -208,7 +204,7 @@ static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool era
 	if ((((uintptr_t) dst) & 63) == 0 && nwords >= 16) {
 	    // write half page
 	    FLASH->PECR |= FLASH_PECR_FPRG;
-	    wr_fl_hp(dst, src);
+	    wf_func(dst, src);
 	    check_eop(3);
 	    FLASH->PECR &= ~FLASH_PECR_FPRG;
 	    src += 16;
@@ -222,9 +218,9 @@ static void write_flash (uint32_t* dst, uint32_t* src, uint32_t nwords, bool era
 	    nwords -= 1;
 	}
     }
-
     relock_flash();
 }
+#endif
 
 static void ee_write (uint32_t* dst, uint32_t val) {
     *dst = val;
@@ -233,11 +229,55 @@ static void ee_write (uint32_t* dst, uint32_t val) {
 
 
 // ------------------------------------------------
+// Update glue functions
+
+uint32_t up_install_init (void* ctx, uint32_t size, void** pdst) {
+    up_ctx* uc = ctx;
+    if (ROUND_PAGE_SZ(size) > ((uintptr_t) uc->fwup - BOOT_FW_BASE)) {
+	// new firmware would overwrite update
+	return BOOT_E_SIZE;
+    }
+    *pdst = (void*) BOOT_FW_BASE;
+    return BOOT_OK;
+}
+
+void up_flash_wr_page (void* ctx, void* dst, void* src) {
+    up_ctx* uc = ctx;
+    // erase if on page boundary
+    if ((((uintptr_t) dst) & (FLASH_PAGE_SZ - 1)) == 0) {
+	// erase page
+	FLASH->PECR |= FLASH_PECR_ERASE;
+	*((uint32_t*) dst) = 0;
+	while (FLASH->SR & FLASH_SR_BSY);
+	check_eop(0);
+	FLASH->PECR &= ~FLASH_PECR_ERASE;
+    }
+    // write half page
+    FLASH->PECR |= FLASH_PECR_FPRG;
+    uc->wf_func(dst, src);
+    check_eop(1);
+    FLASH->PECR &= ~FLASH_PECR_FPRG;
+}
+
+void up_flash_unlock (void* ctx) {
+    unlock_flash();
+}
+
+void up_flash_lock (void* ctx) {
+    relock_flash();
+}
+
+
+// ------------------------------------------------
 // Update functions
 
-static uint32_t update (boot_uphdr* fwup, bool install) {
-    // TODO: migrate implementation from internal code base
-    return BOOT_E_UNKNOWN;
+static void do_install (boot_uphdr* fwup) {
+    uint32_t funcbuf[WR_FL_HP_WORDS];
+    up_ctx uc = {
+	.wf_func = prep_wr_fl_hp(funcbuf),
+	.fwup = fwup,
+    };
+    update(&uc, fwup, true);
 }
 
 static uint32_t set_update (void* ptr, hash32* hash) {
@@ -245,7 +285,7 @@ static uint32_t set_update (void* ptr, hash32* hash) {
     if (ptr == NULL) {
 	rv = BOOT_OK;
     } else {
-	rv = update(ptr, false);
+	rv = update(NULL, ptr, false);
     }
     if (rv == BOOT_OK) {
 	boot_config* cfg = (boot_config*) BOOT_CONFIG_BASE;
@@ -280,14 +320,15 @@ void* bootloader (void) {
     if (cfg->fwupdate1 == cfg->fwupdate2) {
 	boot_uphdr* fwup = (boot_uphdr*) cfg->fwupdate1;
 	if (fwup != NULL
+		&& ((intptr_t) fwup & 3) == 0
 		&& (intptr_t) fwup >= FLASH_BASE
-		&& (intptr_t) (fwup + 1) <= (FLASH_BASE + flash_sz)
+		&& sizeof(boot_uphdr) <= flash_sz - ((intptr_t) fwup - FLASH_BASE)
 		&& fwup->size >= sizeof(boot_uphdr)
 		&& (fwup->size & 3) == 0
 		&& fwup->size <= flash_sz - ((intptr_t) fwup - FLASH_BASE)
 		&& boot_crc32(((unsigned char*) fwup) + 8, (fwup->size - 8) >> 2) == fwup->crc
 		&& true /* TODO hardware id match */ ) {
-	    update(fwup, true);
+	    do_install(fwup);
 	}
     }
 

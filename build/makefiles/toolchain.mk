@@ -1,5 +1,6 @@
 ifeq ($(TOOLCHAIN),gcc)
     FLAGS	+= -MMD -MP
+    FLAGS	+= -g
     CFLAGS	+= -std=gnu11
     LDFLAGS	+= -Wl,--gc-sections -Wl,-Map,$(basename $@).map
     CC		:= $(CROSS_COMPILE)gcc

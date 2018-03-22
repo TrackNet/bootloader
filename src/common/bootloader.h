@@ -17,6 +17,13 @@
 #define _bootloader_h_
 
 
+// This is the public "API" of the bootloader,
+// i.e. the way the firmware and outside world
+// interact with it. Since a bootloader doesn't
+// change once installed and deployed, utmost
+// care must be taken when modifying this API!
+
+
 // Panic types
 #define BOOT_PANIC_TYPE_EXCEPTION	0	// Exception handler
 #define BOOT_PANIC_TYPE_BOOTLOADER	1	// Bootloader (reason codes see below)
@@ -29,22 +36,27 @@
 #define BOOT_PANIC_REASON_FLASH		2	// error writing flash
 
 
+// Update type codes
+#define BOOT_UPTYPE_PLAIN		0	// plain update
+#define BOOT_UPTYPE_LZ4			1	// lz4-compressed update
+#define BOOT_UPTYPE_LZ4DICT		2	// lz4-compressed delta update
+
+
 #ifndef ASSEMBLY
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#define BOOT_CONFIG_BASE	DATA_EEPROM_BASE
-#define BOOT_CONFIG_SZ		64
-
 
 // Bootloader return values (don't change values!)
 enum {
     BOOT_OK,
-    BOOT_E_UNKNOWN,
-    BOOT_E_SIZE,
+    BOOT_E_GENERAL,		// general error
+    BOOT_E_NOIMPL,		// not implemented error
+    BOOT_E_SIZE,		// size error
 };
+
 
 // SHA-256 hash
 typedef union {
@@ -52,13 +64,14 @@ typedef union {
     uint32_t w[8];
 } hash32;
 
+
 // Bootloader information table
+// TODO: move to platform-specific section ?
 typedef struct {
     uint32_t version;					// version of boot loader (values below 256 are reserved for legacy bootloaders)
-    uint32_t (*update) (void* ptr, hash32* hash);	// function to set firmware update pointer
     __attribute__((noreturn))
 	void (*panic) (uint32_t reason, uint32_t addr);	// bootloader panic function 
-
+    uint32_t (*update) (void* ptr, hash32* hash);	// function to set firmware update pointer
     // TODO: extensions
 } boot_boottab;
 

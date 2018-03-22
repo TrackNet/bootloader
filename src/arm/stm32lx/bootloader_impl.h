@@ -24,6 +24,9 @@
 extern uint32_t _ebl;
 #define BOOT_FW_BASE	((uint32_t) (&_ebl))
 
+#define BOOT_CONFIG_BASE	DATA_EEPROM_BASE	// XXX
+#define BOOT_CONFIG_SZ		64			// XXX
+
 
 // ------------------------------------------------
 // Bootloader configuration
