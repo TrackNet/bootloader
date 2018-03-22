@@ -67,20 +67,39 @@ typedef struct {
 typedef struct {
     uint32_t	crc;		// firmware CRC
     uint32_t	size;		// firmware size (in bytes, including this header)
+    /* -- everything below until end (size-8) is included in CRC -- */
     uint32_t	entrypoint;	// address of entrypoint
 } boot_fwhdr;
 
 
-// Hardware identifier
-typedef struct {
-    uint8_t oui[3];		// OUI
-    uint8_t hwid[3];		// hardware identifier
-} boot_hwid;
+// Hardware identifier (EUI-48, native byte order)
+typedef union {
+    struct {
+	uint32_t a;
+	uint16_t b;
+    };
+    uint8_t bytes[6];
+} eui48;
+
+static inline uint64_t eui2int (eui48* eui) {
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return ((uint64_t) eui->b << 32) | eui->a;
+#else
+    return ((uint64_t) eui->a << 16) | eui->b;
+#endif
+}
+
 
 // Update header
 typedef struct {
-    uint32_t	crc;		// firmware CRC
-    uint32_t	size;		// firmware size (in bytes, including this header)
+    uint32_t	crc;		// update CRC
+    uint32_t	size;		// update size (in bytes, including this header)
+    /* -- everything below until end (size-8) is included in CRC -- */
+    uint32_t	fwsize;		// firmware size (in bytes, including header)
+    uint32_t	fwcrc;		// firmware CRC (once unpacked)
+    eui48	hwid;		// hardware target
+    uint8_t	uptype;		// update type
+    uint8_t	rfu;		// RFU
 } boot_uphdr;
 
 #endif

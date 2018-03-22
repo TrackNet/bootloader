@@ -277,13 +277,23 @@ void* bootloader (void) {
 
     uint32_t flash_sz = FLASH_SZ();
 
-    if (cfg->fwupdate1 == cfg->fwupdate2 && cfg->fwupdate1 != 0) {
+    if (cfg->fwupdate1 == cfg->fwupdate2) {
 	boot_uphdr* fwup = (boot_uphdr*) cfg->fwupdate1;
-	// TODO: check if update is valid and install
+	if (fwup != NULL
+		&& (intptr_t) fwup >= FLASH_BASE
+		&& (intptr_t) (fwup + 1) <= (FLASH_BASE + flash_sz)
+		&& fwup->size >= sizeof(boot_uphdr)
+		&& (fwup->size & 3) == 0
+		&& fwup->size <= flash_sz - ((intptr_t) fwup - FLASH_BASE)
+		&& boot_crc32(((unsigned char*) fwup) + 8, (fwup->size - 8) >> 2) == fwup->crc
+		&& true /* TODO hardware id match */ ) {
+	    update(fwup, true);
+	}
     }
 
     // verify integrity of current firmware
-    if (fwh->size > (flash_sz - (BOOT_FW_BASE - FLASH_BASE))
+    if (fwh->size < sizeof(boot_fwhdr)
+	    || fwh->size > (flash_sz - (BOOT_FW_BASE - FLASH_BASE))
 	    || boot_crc32(((unsigned char*) fwh) + 8, (fwh->size - 8) >> 2) != fwh->crc) {
 	boot_panic(BOOT_PANIC_TYPE_BOOTLOADER, BOOT_PANIC_REASON_CRC, 0);
     }
