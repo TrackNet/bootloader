@@ -21,7 +21,9 @@ void _start (boot_boottab* boottab); // forward declaration
 // Firmware header
 __attribute__((section(".fwhdr")))
 const volatile boot_fwhdr fwhdr = {
-    // CRC and length will be patched by external tool
+    // CRC and size will be patched by external tool
+    .crc	= 0,
+    .size	= BOOT_MAGIC_SIZE,
     .entrypoint = (uint32_t) _start,
 };
 

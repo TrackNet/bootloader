@@ -42,6 +42,10 @@
 #define BOOT_UPTYPE_LZ4DICT		2	// lz4-compressed delta update
 
 
+// Magic numbers
+#define BOOT_MAGIC_SIZE			0xff1234ff	// place-holder for firmware size
+
+
 #ifndef ASSEMBLY
 
 #include <stddef.h>
@@ -108,8 +112,8 @@ typedef struct {
     uint32_t	crc;		// update CRC
     uint32_t	size;		// update size (in bytes, including this header)
     /* -- everything below until end (size-8) is included in CRC -- */
-    uint32_t	fwsize;		// firmware size (in bytes, including header)
     uint32_t	fwcrc;		// firmware CRC (once unpacked)
+    uint32_t	fwsize;		// firmware size (in bytes, including header)
     eui48	hwid;		// hardware target
     uint8_t	uptype;		// update type
     uint8_t	rfu;		// RFU

@@ -6,6 +6,7 @@ CFLAGS	+= -g
 
 CFLAGS	+= -mcpu=cortex-m0plus -fno-common -fno-builtin -fno-exceptions -ffunction-sections -fdata-sections -fomit-frame-pointer 
 
+CFLAGS	+= -I../../src/common
 CFLAGS	+= -I../../src/arm/stm32lx
 CFLAGS	+= -I../../src/arm/CMSIS/Include
 CFLAGS	+= -I../../src/arm/CMSIS/Device/ST/STM32L0xx/Include
@@ -15,9 +16,11 @@ LDFLAGS	+= -nostdlib
 LDFLAGS	+= -T../../src/arm/stm32lx/ld/STM32L0xxB.ld
 LDFLAGS	+= -Tfw.ld
 
+FWTOOL	:= python ../../tools/fwtool/fwtool.py
+
 hello.hex: hello
 	arm-none-eabi-objcopy -O ihex $< $@
-	python ../../tools/fwpatch/fwpatch.py $@
+	$(FWTOOL) patch $@
 
 hello: hello.o
 
