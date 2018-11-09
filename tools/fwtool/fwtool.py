@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #     _____                _        __     _
 #    /__   \_ __ __ _  ___| | __ /\ \ \___| |_
 #      / /\/ '__/ _` |/ __| |/ //  \/ / _ \ __|
@@ -16,6 +17,7 @@ from typing import Any,BinaryIO,Optional,Union
 import argparse
 import struct
 import sys
+import os
 
 from intelhex import IntelHex
 from binascii import crc32
@@ -173,34 +175,36 @@ class Command:
     
 
 class MkUpdateCommand(Command):
-    def __init__(self, subs:SPA) -> None:
+    def __init__(self, subs:SPA, prefix:str='') -> None:
         p = super().create_parser(subs, 'mkupdate', 'Create a firmware update file')
         p.add_argument('FWFILE', type=str, help='the firmware file to process')
         p.add_argument('UPFILE', type=str, help='the update file to create')
+        self.prefix = prefix
 
     def main(self, args:NS) -> int:
-        print('Processing %s' % args.FWFILE)
+        print('%sProcessing %s' % (self.prefix, args.FWFILE))
         fw = Firmware(args.FWFILE)
         up = Update.create(Update.TYPE_PLAIN, fw)
-        print('Creating %s' % args.UPFILE)
+        print('%sCreating %s' % (self.prefix, args.UPFILE))
         up.tofile(args.UPFILE)
         return 0
 
 
 class PatchFwCommand(Command):
-    def __init__(self, subs:SPA) -> None:
+    def __init__(self, subs:SPA, prefix:str='') -> None:
         p = super().create_parser(subs, 'patch', 'Patch a firmware file with CRC and length.')
         p.add_argument('FWFILE', type=str, help='the firmware to process')
         p.add_argument('--check-only', action='store_true', help='only check CRC and length values, do not patch')
+        self.prefix = prefix
 
     def main(self, args:NS) -> int:
-        print('Processing %s' % args.FWFILE)
+        print('%sProcessing %s' % (self.prefix, args.FWFILE))
         fw = Firmware(args.FWFILE)
         if not args.check_only:
             fw.patch()
             fw.tofile(args.FWFILE)
-        print('CRC:  0x%08x (%s)' % (fw.hcrc, 'ok' if fw.hcrc == fw.crc else 'invalid'))
-        print('Size: 0x%08x (%s)' % (fw.hsize, 'ok' if fw.hsize == fw.size else 'invalid'))
+        print('%sCRC:  0x%08x (%s)' % (self.prefix, fw.hcrc, 'ok' if fw.hcrc == fw.crc else 'invalid'))
+        print('%sSize: 0x%08x: %d bytes (%s)' % (self.prefix, fw.hsize, fw.hsize, 'ok' if fw.hsize == fw.size else 'invalid'))
         return 0 if fw.hcrc == fw.crc and fw.hsize == fw.size else 1
 
 
@@ -210,8 +214,10 @@ if __name__ == '__main__':
     subs = parser.add_subparsers(dest='COMMAND')
     subs.required = True # type: ignore # http://bugs.python.org/issue9253
 
-    PatchFwCommand(subs)
-    MkUpdateCommand(subs)
+    prefix = os.environ.get('STDOUT_PREFIX', '')
+
+    PatchFwCommand(subs, prefix)
+    MkUpdateCommand(subs, prefix)
 
     args = parser.parse_args()
     sys.exit(args.func(args))
