@@ -17,6 +17,7 @@
 #define _bootloader_impl_h_
 
 #include "bootloader.h"
+#include "boottab.h"
 
 // Convert pointer to Thumb function (set least-significant bit)
 #define THUMB_FUNC(p)	((void*) (((intptr_t) (p)) | 1))

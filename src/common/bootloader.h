@@ -69,17 +69,6 @@ typedef union {
 } hash32;
 
 
-// Bootloader information table
-// TODO: move to platform-specific section ?
-typedef struct {
-    uint32_t version;					// version of boot loader (values below 256 are reserved for legacy bootloaders)
-    __attribute__((noreturn))
-	void (*panic) (uint32_t reason, uint32_t addr);	// bootloader panic function 
-    uint32_t (*update) (void* ptr, hash32* hash);	// function to set firmware update pointer
-    // TODO: extensions
-} boot_boottab;
-
-
 // Firmware header
 typedef struct {
     uint32_t	crc;		// firmware CRC

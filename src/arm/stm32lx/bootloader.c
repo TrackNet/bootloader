@@ -356,4 +356,5 @@ __attribute__((section(".boot.boottab"))) const boot_boottab boottab = {
     .version	= 0x100,
     .update	= set_update,
     .panic	= fw_panic,
+    .crc32      = boot_crc32,
 };
