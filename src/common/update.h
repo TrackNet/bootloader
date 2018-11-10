@@ -16,6 +16,8 @@
 #ifndef _update_h_
 #define _update_h_
 
+#include "bootloader.h"
+
 uint32_t update (void* ctx, boot_uphdr* fwup, bool install);
 
 // glue functions
