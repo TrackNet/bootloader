@@ -61,17 +61,9 @@ static uint32_t boot_crc32 (void* buf, uint32_t nwords) {
 
 
 // ------------------------------------------------
-// Supervisor call
-
-__attribute__((naked, noinline))
-static void svc (uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3) {
-    asm("svc 0");
-    __builtin_unreachable();
-}
-
-
-// ------------------------------------------------
 // Panic
+
+static void svc (uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3); // fwd decl
 
 __attribute__((noreturn, naked, noinline))
 static void fw_panic (uint32_t reason, uint32_t addr) {
@@ -83,6 +75,18 @@ __attribute__((noreturn, naked, noinline))
 static void boot_panic (uint32_t reason) {
     svc(BOOT_SVC_PANIC, BOOT_PANIC_TYPE_BOOTLOADER, reason, 0);
     __builtin_unreachable();
+}
+
+
+
+// ------------------------------------------------
+// Supervisor call
+
+__attribute__((naked, noinline))
+static void svc (uint32_t id, uint32_t p1, uint32_t p2, uint32_t p3) {
+    asm("svc 0");
+    // SVC call should not return, but might if not handled correctly
+    boot_panic(0xdeadbeef);
 }
 
 
