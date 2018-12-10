@@ -15,7 +15,7 @@
 
 #include "bootloader_impl.h"
 #include "update.h"
-#include "hw.h"
+#include "bootloader_hw.h"
 
 
 // ------------------------------------------------

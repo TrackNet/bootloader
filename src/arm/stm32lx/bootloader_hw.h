@@ -13,8 +13,8 @@
  *
  */
 
-#ifndef _hw_h_
-#define _hw_h_
+#ifndef _bootloader_hw_h_
+#define _bootloader_hw_h_
 
 // ------------------------------------------------
 #if defined(STM32L0)
