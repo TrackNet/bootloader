@@ -36,7 +36,7 @@ class Firmware:
                 ih = IntelHex()
                 ih.loadhex(fw)
                 self.base = ih.minaddr()
-                self.fw = bytearray(ih.gets(self.base, (ih.maxaddr() + 1) - self.base))
+                self.fw = bytearray(ih.tobinstr())
             else:
                 with open(fw, 'rb') as f:
                     self.fw = bytearray(f.read())
