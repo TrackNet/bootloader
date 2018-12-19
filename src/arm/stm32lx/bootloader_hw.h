@@ -52,7 +52,7 @@
 
 // ------------------------------------------------
 // GPIO definition
-#define GPIO(p,n,flags)	((('A'-(p)) << 8) | (n) | (flags))
+#define GPIO(p,n,flags)	((((p)-'A') << 8) | (n) | (flags))
 
 #define GPIO_F_ACTLOW	(1 << 16)
 
