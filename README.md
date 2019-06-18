@@ -1,3 +1,5 @@
+> <img src="https://upload.wikimedia.org/wikipedia/commons/3/35/Information_icon.svg" alt="i" width="50" align="left"/> **NOTE**: The bootloader has been superseded by the LoRa Basics™ Loader, which can be found here: https://github.com/lorabasics/basicloader 
+
 # The Bootloader
 
 TrackNet is excited to contribute to the LoRaWAN™ ecosystem by open-sourcing
