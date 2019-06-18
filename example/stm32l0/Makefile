@@ -16,7 +16,7 @@ LDFLAGS	+= -nostdlib
 LDFLAGS	+= -T../../src/arm/stm32lx/ld/STM32L0xxB.ld
 LDFLAGS	+= -Tfw.ld
 
-FWTOOL	:= python ../../tools/fwtool/fwtool.py
+FWTOOL	:= python3 ../../tools/fwtool/fwtool.py
 
 hello.hex: hello
 	arm-none-eabi-objcopy -O ihex $< $@
